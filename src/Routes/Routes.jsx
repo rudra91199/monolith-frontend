@@ -4,35 +4,35 @@ import Login from "../Pages/Login";
 import Dashboard from "../Pages/Dashboard";
 import Clan from "../Pages/ClanContainer";
 import Cwl from "../Pages/Cwl";
+import ProtectedRoute from "./ProtectedRoute";
+import PublicRoute from "./PublicRoute";
 
-// Placeholders for future modules
 const Capital = () => <div className="text-white p-8 font-serif text-2xl">Capital Module (Under Construction)</div>;
+const ClanGames = () => <div className="text-white p-8 font-serif text-2xl">Clan Games Module (Under Construction)</div>;
 
 export const router = createBrowserRouter([
   {
-    path: "/",
-    element: <Login />,
+    element: <PublicRoute />,
+    children: [
+      { path: "/", element: <Login /> },
+      { path: "/verify-email/:token", element: <Login /> },
+      { path: "/reset-password/:token", element: <Login /> },
+    ],
   },
   {
-    path: "/dashboard",
-    element: <Main />,
+    element: <ProtectedRoute />,
     children: [
       {
-        path: "", // Player Overview
-        element: <Dashboard />,
+        path: "/dashboard",
+        element: <Main />,
+        children: [
+          { path: "", element: <Dashboard /> },
+          { path: "clan", element: <Clan /> },
+          { path: "cwl", element: <Cwl /> },
+          { path: "games", element: <ClanGames /> },
+          { path: "capital", element: <Capital /> },
+        ],
       },
-      {
-        path: "clan", // Clan Hub & Registry
-        element: <Clan />,
-      },
-      {
-        path: "cwl",
-        element: <Cwl />,
-      },
-      {
-        path: "capital",
-        element: <Capital />,
-      }
-    ]
-  }
+    ],
+  },
 ]);

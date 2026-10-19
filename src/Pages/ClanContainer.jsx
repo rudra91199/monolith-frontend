@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, ChevronRight, Loader2, Fingerprint, Users, Swords, Hexagon, X, MessageSquareQuote } from 'lucide-react';
 import api from '../utils/api';
+import { useVillage } from '../Context/VillageContext';
 
-// Crisp Clan Ambient Assets
 const clanAmbientAssets = [
   "https://assets.clashk.ing/resources/league_medals.webp",
   "https://assets.clashk.ing/resources/raid_medals.webp",
@@ -14,34 +14,30 @@ const clanAmbientAssets = [
 ];
 
 export default function Clan() {
+  const { activeVillage, loadingProfile } = useVillage();
+
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [clanData, setClanData] = useState(null);
-  
-  const [userRole, setUserRole] = useState('Member');
-  const [clanTag, setClanTag] = useState('Unknown');
-  
   const [showRosterModal, setShowRosterModal] = useState(false);
 
-  const getDecodedToken = () => {
-    const token = localStorage.getItem('coc_token');
-    if (!token) return null;
-    try { return JSON.parse(atob(token.split('.')[1])); } 
-    catch (e) { return null; }
-  };
+  const userRole = activeVillage?.role || 'member';
+  const clanTag = activeVillage?.clanTag || null;
 
   useEffect(() => {
-    const checkClanStatus = async () => {
-      try {
-        const tokenData = getDecodedToken();
-        if (!tokenData) return setLoading(false);
+    if (loadingProfile) return;
+    if (!clanTag) {
+      setClanData(null);
+      setIsRegistered(false);
+      setLoading(false);
+      return;
+    }
 
-        const role = tokenData.role || tokenData.userRole || 'Member';
-        setUserRole(role);
-        setClanTag(tokenData.clanTag || 'Unknown');
-        
-        const response = await api.get(`/api/clan/${encodeURIComponent(tokenData.clanTag)}`);
+    const checkClanStatus = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get(`/api/clan/${encodeURIComponent(clanTag)}`);
         const fetchedData = response.data?.data || response.data;
 
         if (response.data?.isRegistered && fetchedData?.name) {
@@ -50,40 +46,38 @@ export default function Clan() {
         } else {
           setIsRegistered(false);
         }
-      } catch (error) {
+      } catch {
         setIsRegistered(false);
       } finally {
         setLoading(false);
       }
     };
     checkClanStatus();
-  }, []);
+  }, [clanTag, loadingProfile]);
 
   const handleRegisterClan = async () => {
+    if (!clanTag) return;
     setRegistering(true);
     try {
       await api.post('/api/clan/register', { clanTag });
-      const encodedTag = encodeURIComponent(clanTag);
-      const getResponse = await api.get(`/api/clan/${encodedTag}`);
+      const getResponse = await api.get(`/api/clan/${encodeURIComponent(clanTag)}`);
       const fetchedData = getResponse.data?.data || getResponse.data;
       
       if (fetchedData && fetchedData.name) {
         setClanData(fetchedData);
         setIsRegistered(true);
-      } else {
-        throw new Error("Could not retrieve clan data after registration.");
       }
     } catch (error) {
-      alert("Registration failed. Check your browser console.");
+      alert(error.response?.data?.message || "Registration failed.");
     } finally {
       setRegistering(false);
     }
   };
 
   const normalizedRole = userRole.toLowerCase();
-  const hasClearance = ['leader', 'coleader', 'admin'].includes(normalizedRole);
+  const hasClearance = ['leader', 'coleader'].includes(normalizedRole);
 
-  if (loading) {
+  if (loadingProfile || loading) {
     return (
       <div className="w-full h-full min-h-[60vh] flex flex-col items-center justify-center">
         <Loader2 className="w-10 h-10 text-neutral-500 animate-spin mb-4" />
@@ -92,19 +86,26 @@ export default function Clan() {
     );
   }
 
+  if (!clanTag) {
+    return (
+      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center text-center p-6">
+        <ShieldAlert className="w-14 h-14 text-neutral-600 mb-4" />
+        <h2 className="text-2xl font-serif text-white mb-2">No Clan Affiliated</h2>
+        <p className="text-xs text-neutral-500 max-w-md">
+          {activeVillage?.name || 'Your selected village'} is not currently in a clan. Switch villages in the sidebar or join a clan in-game.
+        </p>
+      </div>
+    );
+  }
+
   const memberCount = clanData?.memberCount || (Array.isArray(clanData?.members) ? clanData.members.length : 0);
   const membersArray = clanData?.members || clanData?.memberList || [];
   const clanCastleImage = "https://assets.clashk.ing/buildings/home-village/clan_castle/level_11.webp";
-  
-  // FIX: Properly reference .badge.url as provided by clashofclans.js
-  const backgroundAsset = isRegistered && clanData?.badge?.url ? clanData.badge.url : clanCastleImage;
+  const backgroundAsset = isRegistered && (clanData?.badge?.url || clanData?.badgeUrls?.large) ? (clanData.badge?.url || clanData.badgeUrls?.large) : clanCastleImage;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-6xl mx-auto space-y-6">
-      
-      {/* --- CRISP CLAN ASSETS PARALLAX BACKGROUND (FIXED TO VIEWPORT) --- */}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        {/* Subtle Clan Crest Watermark */}
         <motion.div 
           animate={{ y: [-10, 10, -10], rotate: [0, 2, -2, 0], opacity: [0.1, 0.2, 0.1] }}
           transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
@@ -113,26 +114,16 @@ export default function Clan() {
           <img src={backgroundAsset} alt="Ambient Clan Asset" className="w-full h-full object-contain grayscale-[20%]" />
         </motion.div>
 
-        {/* Floating Medals and Shields */}
         {[...Array(6)].map((_, i) => {
           const asset = clanAmbientAssets[i % clanAmbientAssets.length];
           const size = Math.random() * 45 + 40;
           return (
             <motion.div 
               key={i}
-              animate={{ 
-                y: [0, -120, 0], 
-                x: [0, (i % 2 === 0 ? 40 : -40), 0],
-                rotate: [0, i % 2 === 0 ? -360 : 360],
-              }}
+              animate={{ y: [0, -120, 0], x: [0, (i % 2 === 0 ? 40 : -40), 0], rotate: [0, i % 2 === 0 ? -360 : 360] }}
               transition={{ duration: 25 + Math.random() * 15, repeat: Infinity, ease: "linear", delay: Math.random() * 5 }}
               className="absolute opacity-25 hover:opacity-40 transition-opacity"
-              style={{
-                left: `${Math.random() * 90}%`,
-                top: `${40 + Math.random() * 50}%`,
-                width: `${size}px`,
-                height: `${size}px`,
-              }}
+              style={{ left: `${Math.random() * 90}%`, top: `${40 + Math.random() * 50}%`, width: `${size}px`, height: `${size}px` }}
             >
               <img src={asset} alt="ambient drop" className="w-full h-full object-contain drop-shadow-[0_15px_20px_rgba(0,0,0,0.8)]" />
             </motion.div>
@@ -141,7 +132,6 @@ export default function Clan() {
       </div>
 
       <div className="relative z-10 space-y-6">
-        {/* --- UNREGISTERED STATE --- */}
         {!isRegistered && (
           <div className="flex items-center justify-center min-h-[70vh]">
             <motion.div 
@@ -171,7 +161,7 @@ export default function Clan() {
                 ) : (
                   <div className="p-4 bg-red-950/20 border border-red-900/30 rounded-xl flex items-start gap-3 text-left">
                     <ShieldAlert className="w-5 h-5 text-red-500 shrink-0" />
-                    <p className="text-[12px] text-neutral-300">Ask your Leader or Co-Leader to log in and restore the Clan Castle.</p>
+                    <p className="text-[12px] text-neutral-300">Ask your Leader or Co-Leader to log in and register this clan.</p>
                   </div>
                 )}
               </div>
@@ -179,15 +169,12 @@ export default function Clan() {
           </div>
         )}
 
-        {/* --- REGISTERED OVERVIEW STATE --- */}
         {isRegistered && clanData && (
           <>
-            {/* HEADER ROW */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-neutral-800/60 pb-6">
               <div className="flex items-center gap-5">
                 <div className="w-20 h-20 relative flex-shrink-0">
-                  {/* FIX: Map the official badge properly */}
-                  <img src={clanData.badge?.url || clanCastleImage} alt="Clan Badge" className="w-full h-full object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)]" />
+                  <img src={backgroundAsset} alt="Clan Badge" className="w-full h-full object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)]" />
                 </div>
                 <div>
                   <h1 className="text-3xl sm:text-4xl font-bold text-white font-serif tracking-wide mb-1">
@@ -218,8 +205,6 @@ export default function Clan() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* COLUMN 1: Identity & Description */}
               <div className="lg:col-span-2 space-y-6">
                  <div className="backdrop-blur-[40px] bg-[#070709]/80 border border-neutral-800/60 rounded-[2rem] p-8 shadow-xl">
                    <div className="flex items-center gap-3 mb-4 text-neutral-500">
@@ -235,7 +220,7 @@ export default function Clan() {
                    <div className="flex flex-wrap gap-3">
                      {clanData.labels.map((label) => (
                        <div key={label.id} className="flex items-center gap-2 bg-[#0a0a0c]/80 border border-neutral-800/60 rounded-xl px-4 py-2">
-                         {label.iconUrls?.small && <img src={label.iconUrls.small} alt={label.name} className="w-6 h-6 object-contain" />}
+                         {(label.iconUrls?.small || label.icon?.url) && <img src={label.iconUrls?.small || label.icon?.url} alt={label.name} className="w-6 h-6 object-contain" />}
                          <span className="text-xs text-neutral-300 font-bold">{label.name}</span>
                        </div>
                      ))}
@@ -243,10 +228,7 @@ export default function Clan() {
                  )}
               </div>
 
-              {/* COLUMN 2: Performance Stats */}
               <div className="space-y-6">
-                 
-                 {/* War Machine Card */}
                  <div className="backdrop-blur-[40px] bg-[#070709]/80 border border-neutral-800/60 rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-900/10 blur-[40px] rounded-full pointer-events-none" />
                    <div className="flex items-center gap-3 mb-6 relative z-10">
@@ -277,7 +259,6 @@ export default function Clan() {
                    </div>
                  </div>
 
-                 {/* Capital Card */}
                  <div className="backdrop-blur-[40px] bg-[#070709]/80 border border-neutral-800/60 rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
                    <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-900/10 blur-[40px] rounded-full pointer-events-none" />
                    <div className="flex items-center gap-3 mb-6 relative z-10">
@@ -301,11 +282,9 @@ export default function Clan() {
                       </div>
                    </div>
                  </div>
-
               </div>
             </div>
 
-            {/* --- ROSTER MODAL --- */}
             <AnimatePresence>
               {showRosterModal && (
                 <>

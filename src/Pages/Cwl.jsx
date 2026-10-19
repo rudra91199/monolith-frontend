@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, ShieldAlert, Swords, Target, Crosshair, ArrowLeft, Trophy, Medal, Star } from 'lucide-react';
+import { Loader2, ShieldAlert, Swords, ArrowLeft, Trophy, Medal, Star } from 'lucide-react';
 import api from '../utils/api';
+import { useVillage } from '../Context/VillageContext';
 
-// Crisp CWL Ambient Assets
 const cwlAmbientAssets = [
   "https://assets.clashk.ing/icons/Icon_DC_CWL.png",
   "https://assets.clashk.ing/resources/league_medals.webp",
@@ -12,30 +12,28 @@ const cwlAmbientAssets = [
 ];
 
 export default function Cwl() {
+  const { activeVillage, loadingProfile } = useVillage();
   const [loading, setLoading] = useState(true);
   const [cwlData, setCwlData] = useState(null);
   
-  // Internal Routing State
-  const [activeTab, setActiveTab] = useState('matchups'); // 'matchups', 'standings', 'leaderboard'
+  const [activeTab, setActiveTab] = useState('matchups');
   const [selectedWarIndex, setSelectedWarIndex] = useState(null);
 
   useEffect(() => {
-    const tokenStr = localStorage.getItem('coc_token');
-    if (!tokenStr) {
+    if (loadingProfile) return;
+    if (!activeVillage?.clanTag) {
+      setCwlData(null);
       setLoading(false);
       return;
     }
-    try {
-      const token = JSON.parse(atob(tokenStr.split('.')[1]));
-      api.get(`/api/cwl/${encodeURIComponent(token.clanTag)}`)
-        .then(res => setCwlData(res.data.data))
-        .catch(err => console.error(err))
-        .finally(() => setLoading(false));
-    } catch (e) {
-      setLoading(false);
-    }
-  }, []);
+    setLoading(true);
+    api.get(`/api/cwl/${encodeURIComponent(activeVillage.clanTag)}`)
+      .then(res => setCwlData(res.data.data))
+      .catch(() => setCwlData(null))
+      .finally(() => setLoading(false));
+  }, [activeVillage?.clanTag, loadingProfile]);
 
+  // ... keep the rest of your Cwl.jsx file (from `const clanLeaderboard = useMemo(...)` downwards) untouched!
   // Calculate Internal Clan Leaderboard across all available wars
   const clanLeaderboard = useMemo(() => {
     if (!cwlData?.wars) return [];
