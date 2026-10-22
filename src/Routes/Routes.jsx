@@ -2,13 +2,15 @@ import { createBrowserRouter } from "react-router";
 import Main from "../Layout/Main";
 import Login from "../Pages/Login";
 import Dashboard from "../Pages/Dashboard";
+import PlayerWarStats from "../Pages/PlayerWarStats";
 import Clan from "../Pages/ClanContainer";
-import Cwl from "../Pages/Cwl";
+import ClanWars from "../Pages/ClanWars";
+import ClanGames from "../Pages/ClanGames";
+// import Cwl from "../Pages/Cwl";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 
-const Capital = () => <div className="text-white p-8 font-serif text-2xl">Capital Module (Under Construction)</div>;
-const ClanGames = () => <div className="text-white p-8 font-serif text-2xl">Clan Games Module (Under Construction)</div>;
+// const Capital = () => <div className="text-white p-8 font-serif text-2xl">Capital Module (Under Construction)</div>;
 
 export const router = createBrowserRouter([
   {
@@ -27,10 +29,12 @@ export const router = createBrowserRouter([
         element: <Main />,
         children: [
           { path: "", element: <Dashboard /> },
+          { path: "war-stats", element: <PlayerWarStats /> },
           { path: "clan", element: <Clan /> },
-          { path: "cwl", element: <Cwl /> },
+          { path: "wars", element: <ClanWars /> },
+          // { path: "cwl", element: <Cwl /> },
           { path: "games", element: <ClanGames /> },
-          { path: "capital", element: <Capital /> },
+          // { path: "capital", element: <Capital /> },
         ],
       },
     ],

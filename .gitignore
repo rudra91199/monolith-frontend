@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+src/Pages/clanSnapshotformat.json
+src/Pages/data.txt

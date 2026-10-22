@@ -2,11 +2,38 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- <link rel="icon" type="image/svg+xml" href="/favicon.webp" /> -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>coc-frontend</title>
+    <title>ClashLab — Clash Intel, Refined</title>
+    <meta name="theme-color" content="#030305" />
+    <meta name="background-color" content="#030305" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Favicon & iOS Home Screen Icon (Replace with your 192x192 Cloudinary URL or /pwa-192.png) -->
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://res.cloudinary.com/daqhrz2gr/image/upload/v1792700082/pwa-192_t29le0.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://res.cloudinary.com/daqhrz2gr/image/upload/v1792700082/pwa-192_t29le0.png"
+    />
+
+    <!-- iOS Standalone Fullscreen PWA Meta Tags -->
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="ClashLab" />
   </head>
-  <body>
+  
+  <body class="bg-[#030305]">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

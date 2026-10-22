@@ -1,1 +1,34 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: 'Clash';
+  src: url('./assets/Clash_Regular.otf') format('opentype');
+  font-weight: 100 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Clash';
+  src: url('./assets/Clash_Bold.otf') format('opentype');
+  font-weight: 600 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: 'Clash', system-ui, sans-serif;
+  --font-serif: 'Clash', Georgia, serif;
+  --font-mono: 'Clash', monospace;
+}
+
+@layer base {
+  html,
+  body,
+  button,
+  input,
+  textarea,
+  select {
+    font-family: 'Clash', sans-serif;
+  }
+}
